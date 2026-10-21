@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tgz
+coverage/
+
+# Local shell cache and private runtime configuration
+/Microsoft/
+/.pi/
+/.env
+/.env.*
+!/.env.example
+/auth.json

@@ -1,0 +1,35 @@
+# Development status and dependency policy
+
+Phase A's generic batch implementation is archived. Phase C adds semantic record filtering: seven independently exposed tool definitions, shared execution resources, parent lifecycle and release. Fresh typecheck/build, deterministic tests and offline installed-artifact verification pass; see [current evidence](goal-progress.md) and [record coverage](semantic-verification.md). Phase C spec synchronization and archive are also complete; five main capability specs captured that milestone. Everything starts disabled; credentials or saved models are not consent. Phase E adds systematic search and an eighth tool; discovery, expansion and live evaluation remain later work. See [search verification](search-verification.md).
+
+Phase D's internal capture implementation and its verification are described in [filesystem evidence](filesystem-evidence.md) and [filesystem verification](filesystem-verification.md). Phase D is synchronized and archived (17/17 tasks); six main capability specs now validate. Phase D alone registered no new tool; Phase E now integrates its capture foundation through semantic_search.
+
+## Toolchain
+
+Use Node >=22.19.0 and npm. Build uses TypeScript 5.9.3 with strict NodeNext/ESM and declarations; tests use Node's built-in test runner on compiled modules. Host packages are unbundled peer dependencies. Development targets Pi 1.2.0. TypeBox is pinned to the same 1.3.27 release used by that host; Node type declarations are 22.20.5.
+
+## Explicit release-age exception
+
+The user's npm configuration has a seven-day minimum release age. Pi 1.2.0 was published on 2026-10-12 and the development environment already runs that version. On 2026-10-14 the user explicitly authorized a narrow project-only exception for the required @earendil-works Pi packages, preserving the rule for other packages and leaving global configuration unchanged.
+
+npm 11.15.0 exposes no per-package minimum-age exclusion. The manifest therefore pins the two direct Pi development dependencies and five related Pi dependency overrides to their exact official-registry 1.2.0 tarball URLs. These bypass date-based *version selection* only for those named packages; lockfile integrity pins their content. All other dependencies continue to resolve with the user's seven-day setting. This is not authorization for arbitrary new-package exceptions or setting min-release-age to zero.
+
+Commands (once installation succeeds): `npm ci`, `npm run typecheck`, `npm test`. Installation and tests must not load user credentials or call a live classifier. Live smoke/evaluation work requires separate explicit authorization.
+
+## Deterministic test isolation
+
+`npm test` builds, then runs each test file with a fresh credential-free environment and temporary user/config roots. Node filesystem permissions allow reads only from the project and test temporary root, and writes only to that temporary root. Network entry points are blocked by a preloader. Fixtures assert that the actual user auth path is unreadable and network attempts fail. This prevents accidental provider use, not execution of deliberately hostile test code (child processes are allowed for import/integration checks). Filesystem tests and actual semantic host tests additionally receive precise read grants for ancestor `.git` metadata, not whole ancestor directories. Their validated link-creation fixture helper alone gets broad filesystem flags because Node requires them for symlink creation; it accepts paths only under the isolated temporary root. Windows capture uses a fixed literal-path PowerShell metadata worker with a credential-free environment. Actual POSIX tests run through `scripts/test-filesystem-posix.mjs` under a Linux Node runtime, not path simulation. Only the actual semantic codemode integration test also receives worker permission so Pi can launch its QuickJS worker. That worker inherits the credential-free environment and network preloader.
+
+On Node 24.21.0/Windows, `node --test` discovery could not find explicit files under scoped filesystem permissions; wildcard discovery even returned zero tests. The runner therefore enumerates a nonempty file list and executes each file directly using node:test's normal exit-status reporting, without relaxing filesystem permissions. The suite includes real temporary Pi SessionManager files and actual codemode scripts. Current test counts and command evidence are recorded in [goal progress](goal-progress.md). The EX-01–EX-38 mapping, actual Pi integration scope and remaining handoff are recorded in `verification.md`. These checks do not establish semantic quality or later-phase evaluation gates.
+
+## Internal execution implementation decisions
+
+- Reuse references completed answers retained in live batches. Releasing their source workspace removes corresponding optional reuse references; it does not refund accounting. A hit copies and accounts for the destination answer, preserving the original judgment ID without a new usage delta. Failed and in-flight outcomes are not reusable.
+- Pagination retains at most one random cursor slot per batch offset. Tokens authenticate that slot and its result revision with an ephemeral HMAC secret, so old revisions remain distinguishable as stale without retaining unbounded per-run token histories. Batch release or generation cleanup deletes the slots. Cursors are opaque to callers and confer no authorization.
+- Provider input is copied again at the native boundary to protect admitted evidence from accidental adapter mutation. Provider errors are reduced to stable codes; reported usage survives a later settlement-write failure, while ledger liability remains conservative.
+- Host ownership, explicit library connection, lifecycle hooks, commands and tool exposure are implemented and covered by an extension API harness with real temporary SessionManager files. Actual Pi loader/nested-tool integration also passes; the clause-level generic execution audit and isolated package-consumer checks also pass. These results are not evidence of semantic quality.
+- Factories install discovery and register commands/flags/hooks synchronously. User configuration is read and session resources are allocated at session_start; generic and semantic record tool definitions are then registered (or replaced by name after session replacement) with codemode/hidden exposure matching that session's family configuration. Late tool registration is verified through Pi 1.2.0's actual loader, runtime refresh callback, runner and wrapped tool pipeline.
+
+## Offline artifact verification
+
+`npm run verify:package` builds and packs without lifecycle scripts, installs the local tarball offline with credential-free temporary npm configuration, and supplies the already verified Pi/TypeBox peers through local junctions. It checks runtime/type exports and that host packages, tests, source, credentials and caches are not bundled. The consumer and artifact are removed afterward; this is an installation check, not publication or a registry dependency-resolution claim. Native smoke is separate and has not been run.
